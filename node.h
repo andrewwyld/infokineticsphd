@@ -1,110 +1,217 @@
-//#define __IKAW_DIRECTED
+#ifndef _INC_IKAW_NODE
+#define _INC_IKAW_NODE
 
-#ifndef __IKAWNODE
-#define __IKAWNODE
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <iostream>
+#include <time.h>
+#include "hash.h"
+#include "dlist.h"
+#include "ikawdefs.h"
+
+class cEdge;
+typedef dlist<cEdge> cEdgeList;
+class cVertex;
+typedef dlist<cVertex> cVertexList;
+class cCluster;
 
 /*_____________________________________________________________.
-                                                      sNodule */
-//sNodule encodes an edge for an sNode.
-typedef struct _sNodule {
+                                                        cEdge */
+//cEdge encodes an edge for a cVertex.
+class cEdge {
 	//doubly-linked list pointers
-	struct _sNodule * prev;
-	struct _sNodule * next;
 
-	//edge encoded
-	struct _sNode * edge;
+	friend class cVertex;
 
-	//sNode owning sNodule
-	struct _sNode * owner;
-} sNodule;
+public:
+
+	cEdge();
+	cEdge(cEdgeList* list, cVertex* source, cVertex* destin);
+	cEdge(cEdge *nPrev, cVertex* source, cVertex* destin);
+	cEdge(cVertex* source, cVertex* destin);
+	cEdge(cEdge *nPrev, cEdge *nReverse);
+	~cEdge();
+
+	void setDepth(int dDepth);
+	int getDepth();
+
+	void match(cEdge * reverse);
+	cEdge * cEdge::findMatch(cVertex * comp);
+
+	void append(cEdge * appendix);
+
+	cEdge * getPrev(){return prev;}
+	cEdge * getNext(){return next;}
+
+	int getStrength(){return strength;}
+	int getWeakness(){return weakness;}
+
+	cVertex* getVertex(int i);
+
+//edge
+	cVertex * vDestin;
+//owner
+	cVertex * vSource;
+//corresponding return edge for undirected graphs
+	cEdge * vReverse;
+
+protected:
+	cEdge * prev;
+	cEdge * next;
+//	cEdge * left;
+//	cEdge * right;
+	int strength;
+	int weakness;
+
+	static double edgeCount;
+	static int depth;
+
+};
+
 
 /*_____________________________________________________________.
-                                                        sNode */
-typedef struct _sNode {
-	//flag.  mostly for checking loops when:
-		//propagating
-		//destroying networks.
-	int flag;
+                                                      cVertex */
+class cVertex {
 
-	//match flag.  used to check if a node had a match
-		//but doesn't anymore.
-	int match;
+	friend class cEdge;
+	friend class cEdgeList;
+	friend class cNet;
 
-	//node degree.  can be inferred from sNodule.
-	int degree;
+public:
+	cVertex(int depth, int distrib);
+	cVertex(int nIndex);
+	cVertex();
+	~cVertex();
 
-	//net degree.
-	int subdeg;
+	void setconsts(cNet* N);
+	int init();
+	int init(int i);
+	int init(int i, int nM, int nS, double nP);
 
-	//net index
+	int rndFn();
+	void rndFnInit();
+	void setDepth(int dDepth);
+	int getDepth();
+	int comp(cVertex * destin);
+	int comp();
+
+	int join(cVertex * destin);
+	int condJoin(cVertex* destin);
+	void disjoin(cVertex * destin);
+	int disjoin();
+	int disjoin(double strength);
+	int disjoin(int depth);
+	int disjoin(int depth, double strength);
+	void flagSet(int fFlag);
+	int flagSub(int value);
+	int propagate(int level, int value);
+	int set();
+	int set(int i);
+	int reset();
+	double clustCoeff();
+	bool doCommunicate();
+	int countFresh(cDoubleHash* hash, cDoubleHash* copyhash, int depth);
+	int pathCount(cDoubleHash* hash, cDoubleHash* copyhash);
+	cVertex* getNeighbour(int i);
+	cVertex* getNeighbour();
+
+
+	int disrupt();
+	void mergeData(cVertex* that);
+
+
+	int clusterSize();
+	int clusterSize(int nFlag);
+//mode marker
+	void setMode(int comp);
+	bool mode(int comp);
+	int getDegree(){return degree;}
+//net index
 	int index;
 
-	//data array
+//disrupt function data
+	static int disruptClusterSize;
+	static int disruptEdgesKilled;
+	static int disruptRedundancy;
+//functions
+	bool connected(cVertex* two);
+//vertex degree.  can be inferred from cEdge.
+	int degree;
+
+
+private:
+
+	int allocate();
+
+	void halfjoin(cVertex * destin);
+//flag.  mostly for checking loops when:
+	//propagating
+	//destroying networks.
+	int flag;
+
+//match flag.  used to check if a vertex had a match
+	//but doesn't anymore.
+	int match;
+
+//mode
+	static int vMode;
+
+//data / purpose arrays
 	int * data;
+	int * purpose;
+	int * skill;
 
-	//top nodule in pile
-	sNodule * top;
+//edge list
+	cEdge * edges;
+	cEdge * bottom;
+	cEdge * temp;
 
-	//bottom nodule in pile
-	sNodule * bottom;
-} sNode;
+//probability
+	static int ip;
+	static double fp;
 
-/*_____________________________________________________________.
-                                                         sNet */
-typedef struct _sNet {
-	//number of nodes
-	int size;
+//vector depth
+	static int m;
+	static double fm;
 
-	//data array depth for each node 
-	int depth;
+//vector distribution
+	static int s;
+	static double fs;
 
-	//probability as float
-	float fp;
+//difference (for speed)
+	static int m_s;
+	static double fm_s;
+	static double f1_m;
+	static double f1_m_s;
 
-	//probability as int (based on rand() values)
-	int ip;
+//static index marker
+	static int sIndex;
 
-	//array of nodes
-	sNode * nodes;
+};
 
-	//node pointers for general use
-	sNode * node0;
-	sNode * node1;
+class cCluster{
 
-} sNet;
+public:
+
+//	inline const cCluster& operator += (const cCluster& source){
+//		mList+=source.mList;
+//	}
+
+private:
+
+	cVertexList mList;
+
+};
 
 
-#ifdef __IKAW_DIRECTED
-#define join(one, two) join_directed(one, two)
-#define disjoin(n) disjoin_directed(n)
-#else
-#define join(one, two) join_undirected(one, two)
-#define disjoin(n) disjoin_undirected(n)
-#endif
 
-int excise(sNodule* n);
+int vertexCmp(const cVertex* n0, const cVertex* n1, int level);
+int _vertexCmp(const void* n0, const void* n1);
 
-int extend(sNode* n);
+int basRnd(int bound);
 
-int join_directed(sNode* one, sNode* two);
-int join_undirected(sNode* one, sNode* two);
-
-int disjoin_directed(sNode* n);
-int disjoin_undirected(sNode* n);
-int disjoin_all(sNode* n);
-
-int nodeCmp(const sNode* n0, const sNode* n1, int level);
-int _nodeCmp(const void* n0, const void* n1);
-
-int flagsub(sNode* n);
-int unflagsub(sNode* n);
-
-int propagdeg(sNode* n, int subdeg);
-int propagate(sNode* n, int level, int value);
-
-sNode* sNodeArray(int size, int depth);
-sNet* sNetCreate(int size, int depth, float p);
-int sNetDestroy(sNet* n);
+double clustCoeff(cVertex * n);
 
 #endif
 

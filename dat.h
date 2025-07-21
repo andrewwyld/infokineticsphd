@@ -1,16 +1,16 @@
-#ifndef __IKAWDAT
-#define __IKAWDAT
+#ifndef _INC_IKAWDAT
+#define _INC_IKAWDAT
 
 /*_____________________________________________________________.
                                                          sDat */
-typedef struct s_dat {
+class cDat {
+public:
+	cDat(cDat* n);
+	~cDat();
+	cDat* end();
 	int data;
 	int count;
-	struct s_dat * next;
-} sDat;
-
-sDat * datEnd (sDat * n);
-int datKill(sDat * n);
-int datExt(sDat* n);
+	cDat * next;
+};
 
 #endif
